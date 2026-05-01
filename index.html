@@ -5,98 +5,61 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tiket Event</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400&display=swap" rel="stylesheet">
 
 <style>
-:root {
-  --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c26;
-  --border:rgba(255,255,255,0.08);
-  --accent:#e8ff6b;
-  --text:#f0f0f5; --text2:#8888aa;
-  --danger:#ff6b6b;
-}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);margin:0;display:flex;justify-content:center}
-.wrap{max-width:520px;width:100%;padding:2rem 1rem}
-
-.logo{text-align:center;margin-bottom:2rem}
-.logo-title{font-family:'Syne';font-size:32px;font-weight:800}
-
-.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem}
-
-.event-card{padding:1.2rem;border-radius:16px;border:1px solid var(--border);margin-bottom:10px;cursor:pointer}
-.event-card.full{opacity:.5;cursor:not-allowed}
-
-.event-name{font-weight:700;font-family:'Syne'}
-.event-date{font-size:13px;color:var(--text2)}
-.event-price{color:var(--accent);font-weight:700}
-
-.status{font-size:12px;margin-top:8px}
-.status.open{color:#6bffb8}
-.status.full{color:var(--danger)}
-
-.btn{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-family:'Syne';cursor:pointer}
-.btn-primary{background:var(--accent)}
-.btn-primary:disabled{background:#555}
-
-input{width:100%;padding:12px;margin-bottom:1rem;background:var(--surface2);border:1px solid var(--border);color:white;border-radius:10px}
-
+body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-content:center}
+.wrap{max-width:520px;width:100%;padding:20px}
+.card{background:#13131a;padding:16px;border-radius:14px;margin-bottom:12px}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-weight:700;background:#e8ff6b;color:black;cursor:pointer}
+.event{padding:12px;border:1px solid #222;border-radius:12px;margin-bottom:10px;cursor:pointer}
+.full{opacity:.5;cursor:not-allowed}
 .sub{display:none}
 .sub.active{display:block}
-
-.timer{font-size:36px;text-align:center;color:var(--accent)}
-.center{text-align:center}
+.timer{font-size:32px;text-align:center;margin:10px 0}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-<div class="logo">
-  <div class="logo-title">Pilih Event</div>
+<h2>Pilih Event</h2>
+
+<div id="list"></div>
+
+<div id="detail" style="display:none">
+
+<button onclick="back()">← Kembali</button>
+
+<div class="card">
+<div id="name"></div>
+<div id="date"></div>
+<div id="price"></div>
 </div>
 
-<!-- EVENT LIST -->
-<div id="screenList"></div>
+<button class="btn" onclick="show('form')">Pesan</button>
 
-<!-- DETAIL -->
-<div id="screenDetail" style="display:none">
+<div class="sub" id="form">
+<input id="name1" placeholder="Nama 1">
+<input id="name2" placeholder="Nama 2 (opsional)">
+<button class="btn" onclick="order()">Lanjut</button>
+</div>
 
-  <button onclick="goBack()">← Kembali</button>
+<div class="sub" id="pay">
+<div class="card">
+<div id="orderId"></div>
+<div class="timer" id="timer">03:00</div>
+<div id="va"></div>
+<button class="btn" onclick="confirmPay()">Saya Sudah Transfer</button>
+</div>
+</div>
 
-  <div class="card">
-    <div id="eventName"></div>
-    <div id="eventDate"></div>
-    <div id="eventPrice"></div>
-  </div>
-
-  <button class="btn btn-primary" id="btnStart" onclick="start()">Pesan Tiket</button>
-
-  <!-- FORM -->
-  <div class="sub" id="form">
-    <div class="card">
-      <input id="name1" placeholder="Nama 1">
-      <input id="name2" placeholder="Nama 2 (opsional)">
-      <button class="btn btn-primary" onclick="createOrder()">Lanjut</button>
-    </div>
-  </div>
-
-  <!-- PAYMENT -->
-  <div class="sub" id="payment">
-    <div class="card center">
-      <div id="orderId"></div>
-      <div class="timer" id="timer">03:00</div>
-      <div id="va"></div>
-      <button class="btn btn-primary" onclick="success()">Saya Sudah Transfer</button>
-    </div>
-  </div>
-
-  <!-- SUCCESS -->
-  <div class="sub" id="success">
-    <div class="card center">
-      <h2>Berhasil!</h2>
-      <div id="successOrder"></div>
-    </div>
-  </div>
+<div class="sub" id="done">
+<div class="card">
+<h3>Berhasil</h3>
+<div id="doneId"></div>
+</div>
+</div>
 
 </div>
 
@@ -104,104 +67,133 @@ input{width:100%;padding:12px;margin-bottom:1rem;background:var(--surface2);bord
 
 <script>
 
-// ================= DEMO DATA =================
-const events = [
-  {key:"May",name:"Event May",date:"8 May 2026",price:35000,isFull:false,isActive:true},
-  {key:"juli",name:"Event Juli",date:"20 Juli 2025",price:35000,isFull:true,isActive:true},
-];
+// ================= CONFIG =================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylpVq5gSu2wwZb62ibiRnMV7C-4gYiLbgSQFsUyJ2R_iG2PecN4yD-Eq6MCfddUIZ_/exec";
 
-// ================= INIT =================
-const listEl = document.getElementById("screenList");
-
-function loadList(){
-  listEl.innerHTML="";
-  events.forEach(e=>{
-    const el = document.createElement("div");
-    el.className="event-card"+(e.isFull?" full":"");
-
-    let status = e.isFull ? "Sold Out" : (e.isActive ? "Open Registration" : "Closed");
-
-    el.innerHTML=`
-      <div class="event-name">${e.name}</div>
-      <div class="event-date">${e.date}</div>
-      <div class="event-price">Rp ${e.price.toLocaleString()}</div>
-      <div class="status ${e.isFull?'full':'open'}">${status}</div>
-    `;
-
-    if(!e.isFull && e.isActive){
-      el.onclick=()=>openEvent(e);
-    }
-
-    listEl.appendChild(el);
+// ================= API =================
+async function api(action,data={}){
+  const res = await fetch(SCRIPT_URL,{
+    method:'POST',
+    body:JSON.stringify({action,...data})
   });
+  return res.json();
 }
-
-loadList();
 
 // ================= STATE =================
 let currentEvent=null;
 let orderId=null;
 let timerInt=null;
 
+// ================= LOAD EVENTS =================
+async function load(){
+  const res = await api("listEvents");
+
+  const el = document.getElementById("list");
+  el.innerHTML="";
+
+  res.events.forEach(e=>{
+    const div=document.createElement("div");
+    div.className="event"+(e.isFull?" full":"");
+
+    div.innerHTML=`
+      <b>${e.eventName}</b><br>
+      ${e.eventDate}<br>
+      Rp ${e.ticketPrice.toLocaleString()}<br>
+      ${e.isFull?"Sold Out":"Open"}
+    `;
+
+    if(!e.isFull){
+      div.onclick=()=>openEvent(e);
+    }
+
+    el.appendChild(div);
+  });
+}
+
+load();
+
 // ================= NAV =================
 function openEvent(e){
   currentEvent=e;
-  document.getElementById("screenList").style.display="none";
-  document.getElementById("screenDetail").style.display="block";
+  document.getElementById("list").style.display="none";
+  document.getElementById("detail").style.display="block";
 
-  document.getElementById("eventName").innerText=e.name;
-  document.getElementById("eventDate").innerText=e.date;
-  document.getElementById("eventPrice").innerText="Rp "+e.price.toLocaleString();
+  name.innerText=e.eventName;
+  date.innerText=e.eventDate;
+  price.innerText="Rp "+e.ticketPrice.toLocaleString();
 }
 
-function goBack(){
-  document.getElementById("screenDetail").style.display="none";
-  document.getElementById("screenList").style.display="block";
+function back(){
+  document.getElementById("detail").style.display="none";
+  document.getElementById("list").style.display="block";
 }
 
-// ================= FLOW =================
-function start(){
-  show("form");
-}
+// ================= ORDER =================
+async function order(){
+  const name1=document.getElementById("name1").value;
+  const name2=document.getElementById("name2").value;
 
-function createOrder(){
-  orderId="TKT-"+Math.random().toString(36).slice(2,8).toUpperCase();
+  if(!name1) return alert("Nama wajib");
+
+  const res = await api("createOrder",{
+    eventKey:currentEvent.key,
+    slots:name2?2:1,
+    name1,
+    name2
+  });
+
+  if(!res.success) return alert(res.error);
+
+  orderId=res.orderId;
 
   document.getElementById("orderId").innerText=orderId;
-  document.getElementById("va").innerText="VA: 827700123456";
+  document.getElementById("va").innerText=res.virtualAccount;
 
-  show("payment");
+  show("pay");
   startTimer();
 }
 
-function success(){
+// ================= PAYMENT =================
+async function confirmPay(){
+  const res = await api("confirmPayment",{
+    eventKey:currentEvent.key,
+    orderId
+  });
+
+  if(!res.success) return alert(res.error);
+
   clearInterval(timerInt);
-  document.getElementById("successOrder").innerText=orderId;
-  show("success");
+
+  document.getElementById("doneId").innerText=orderId;
+  show("done");
 }
 
+// ================= TIMER =================
+function startTimer(){
+  clearInterval(timerInt);
+
+  let t=180;
+  timerInt=setInterval(()=>{
+    t--;
+    let m=String(Math.floor(t/60)).padStart(2,"0");
+    let s=String(t%60).padStart(2,"0");
+    timer.innerText=m+":"+s;
+
+    if(t<=0){
+      clearInterval(timerInt);
+      alert("Expired");
+      back();
+    }
+  },1000);
+}
+
+// ================= UI =================
 function show(id){
   document.querySelectorAll(".sub").forEach(s=>s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
 }
 
-// ================= TIMER =================
-function startTimer(){
-  let time=180;
-  timerInt=setInterval(()=>{
-    time--;
-    let m=String(Math.floor(time/60)).padStart(2,"0");
-    let s=String(time%60).padStart(2,"0");
-    document.getElementById("timer").innerText=m+":"+s;
-
-    if(time<=0){
-      clearInterval(timerInt);
-      alert("Expired");
-      goBack();
-    }
-  },1000);
-}
-
 </script>
+
 </body>
 </html>
