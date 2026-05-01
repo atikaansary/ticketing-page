@@ -6,44 +6,135 @@
 <title>Ticketing</title>
 
 <style>
-body{font-family:sans-serif;background:#0a0a0f;color:white;display:flex;justify-content:center}
-.wrap{max-width:500px;width:100%;padding:20px}
-.card{background:#13131a;padding:16px;border-radius:12px;margin-bottom:10px}
-.btn{width:100%;padding:14px;border:none;border-radius:10px;background:#e8ff6b;font-weight:bold;cursor:pointer}
-.event{padding:12px;border:1px solid #333;border-radius:10px;margin-bottom:10px;cursor:pointer}
-.sub{display:none}
-.sub.active{display:block}
-.timer{text-align:center;font-size:28px;margin:10px 0}
+:root{
+  --bg:#fff;
+  --card:#fff;
+  --border:#f2e6ea;
+  --pink:#ff4fa3;
+  --pink-soft:#ffe4ef;
+  --text:#2b2b2b;
+  --text2:#888;
+}
+
+body{
+  font-family:sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  justify-content:center;
+}
+
+.wrap{
+  max-width:500px;
+  width:100%;
+  padding:20px;
+}
+
+h2{
+  font-size:22px;
+  margin-bottom:15px;
+}
+
+/* CARD */
+.card{
+  background:var(--card);
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:12px;
+  border:1px solid var(--border);
+}
+
+/* EVENT */
+.event{
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:.2s;
+}
+.event:hover{
+  border-color:var(--pink);
+  background:var(--pink-soft);
+}
+
+/* BUTTON */
+.btn{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  background:var(--pink);
+  color:white;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+.btn:hover{
+  background:#ff2d92;
+}
+
+/* INPUT */
+input{
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  outline:none;
+}
+input:focus{
+  border-color:var(--pink);
+}
+
+/* TIMER */
+.timer{
+  text-align:center;
+  font-size:28px;
+  margin:12px 0;
+  color:var(--pink);
+  font-weight:bold;
+}
+
+/* TEXT */
+.small{
+  color:var(--text2);
+  font-size:13px;
+}
+
+/* STATE */
+.hidden{display:none}
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-<h2>Pilih Event</h2>
+<h2>✨ Pilih Event</h2>
+
 <div id="list"></div>
 
-<div id="detail" style="display:none">
+<div id="detail" class="hidden">
 
 <button onclick="back()">← Kembali</button>
 
 <div class="card">
 <div id="name"></div>
-<div id="date"></div>
+<div id="date" class="small"></div>
 <div id="price"></div>
 </div>
 
-<button class="btn" onclick="show('form')">Pesan</button>
+<button class="btn" onclick="showForm()">Pesan Tiket</button>
 
 <!-- FORM -->
-<div id="form" class="sub">
-<input id="name1" placeholder="Nama">
-<input id="email" placeholder="Email">
+<div id="form" class="hidden">
+<input id="name1" placeholder="Nama lengkap">
+<input id="email" placeholder="Email aktif">
 <button class="btn" onclick="order()">Lanjut</button>
 </div>
 
 <!-- PAYMENT -->
-<div id="pay" class="sub">
+<div id="pay" class="hidden">
 <div class="card">
 <div id="orderId"></div>
 <div class="timer" id="timer">03:00</div>
@@ -53,9 +144,9 @@ body{font-family:sans-serif;background:#0a0a0f;color:white;display:flex;justify-
 </div>
 
 <!-- SUCCESS -->
-<div id="done" class="sub">
+<div id="done" class="hidden">
 <div class="card">
-<h3>Berhasil</h3>
+<h3 style="color:var(--pink)">Pembayaran Berhasil 💖</h3>
 <div id="doneId"></div>
 </div>
 </div>
@@ -66,27 +157,23 @@ body{font-family:sans-serif;background:#0a0a0f;color:white;display:flex;justify-
 
 <script>
 
-// ================= CONFIG =================
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylpVq5gSu2wwZb62ibiRnMV7C-4gYiLbgSQFsUyJ2R_iG2PecN4yD-Eq6MCfddUIZ_/exec";
 
-// ================= API =================
 async function api(action,data={}){
   const res = await fetch(SCRIPT_URL,{
     method:'POST',
+    headers:{'Content-Type':'application/json'},
     body:JSON.stringify({action,...data})
   });
   return res.json();
 }
 
-// ================= STATE =================
 let currentEvent=null;
 let orderId=null;
 let timerInt=null;
 
-// ================= LOAD EVENTS =================
 async function load(){
   const res = await api("listEvents");
-
   const el = document.getElementById("list");
   el.innerHTML="";
 
@@ -96,8 +183,8 @@ async function load(){
 
     div.innerHTML=`
       <b>${e.eventName}</b><br>
-      ${e.eventDate}<br>
-      Rp ${e.ticketPrice.toLocaleString()}
+      <span class="small">${e.eventDate}</span><br>
+      <b>Rp ${e.ticketPrice.toLocaleString()}</b>
     `;
 
     div.onclick=()=>openEvent(e);
@@ -106,11 +193,10 @@ async function load(){
 }
 load();
 
-// ================= NAV =================
 function openEvent(e){
   currentEvent=e;
-  list.style.display="none";
-  detail.style.display="block";
+  list.classList.add("hidden");
+  detail.classList.remove("hidden");
 
   name.innerText=e.eventName;
   date.innerText=e.eventDate;
@@ -118,14 +204,17 @@ function openEvent(e){
 }
 
 function back(){
-  detail.style.display="none";
-  list.style.display="block";
+  detail.classList.add("hidden");
+  list.classList.remove("hidden");
 }
 
-// ================= ORDER =================
+function showForm(){
+  form.classList.remove("hidden");
+}
+
 async function order(){
-  const name1=document.getElementById("name1").value.trim();
-  const email=document.getElementById("email").value.trim();
+  const name1=name1Input.value.trim();
+  const email=emailInput.value.trim();
 
   if(!name1) return alert("Nama wajib");
   if(!email.includes("@")) return alert("Email tidak valid");
@@ -141,14 +230,13 @@ async function order(){
 
   orderId=res.orderId;
 
-  document.getElementById("orderId").innerText=orderId;
-  document.getElementById("va").innerText=res.virtualAccount;
+  orderIdEl.innerText=orderId;
+  va.innerText=res.virtualAccount;
 
-  show("pay");
+  pay.classList.remove("hidden");
   startTimer();
 }
 
-// ================= PAYMENT =================
 async function confirmPay(){
   const res = await api("confirmPayment",{
     eventKey:currentEvent.key,
@@ -158,11 +246,10 @@ async function confirmPay(){
   if(!res.success) return alert(res.error);
 
   clearInterval(timerInt);
-  document.getElementById("doneId").innerText=orderId;
-  show("done");
+  doneId.innerText=orderId;
+  done.classList.remove("hidden");
 }
 
-// ================= TIMER =================
 function startTimer(){
   clearInterval(timerInt);
   let t=180;
@@ -179,12 +266,6 @@ function startTimer(){
       back();
     }
   },1000);
-}
-
-// ================= UI =================
-function show(id){
-  document.querySelectorAll(".sub").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
 }
 
 </script>
