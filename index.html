@@ -3,20 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tiket Event</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700&family=DM+Sans:wght@400&display=swap" rel="stylesheet">
+<title>Ticketing</title>
 
 <style>
-body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-content:center}
-.wrap{max-width:520px;width:100%;padding:20px}
-.card{background:#13131a;padding:16px;border-radius:14px;margin-bottom:12px}
-.btn{width:100%;padding:14px;border:none;border-radius:10px;font-weight:700;background:#e8ff6b;color:black;cursor:pointer}
-.event{padding:12px;border:1px solid #222;border-radius:12px;margin-bottom:10px;cursor:pointer}
-.full{opacity:.5;cursor:not-allowed}
+body{font-family:sans-serif;background:#0a0a0f;color:white;display:flex;justify-content:center}
+.wrap{max-width:500px;width:100%;padding:20px}
+.card{background:#13131a;padding:16px;border-radius:12px;margin-bottom:10px}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;background:#e8ff6b;font-weight:bold;cursor:pointer}
+.event{padding:12px;border:1px solid #333;border-radius:10px;margin-bottom:10px;cursor:pointer}
 .sub{display:none}
 .sub.active{display:block}
-.timer{font-size:32px;text-align:center;margin:10px 0}
+.timer{text-align:center;font-size:28px;margin:10px 0}
 </style>
 </head>
 
@@ -24,7 +21,6 @@ body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-c
 <div class="wrap">
 
 <h2>Pilih Event</h2>
-
 <div id="list"></div>
 
 <div id="detail" style="display:none">
@@ -39,13 +35,15 @@ body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-c
 
 <button class="btn" onclick="show('form')">Pesan</button>
 
-<div class="sub" id="form">
-<input id="name1" placeholder="Nama 1">
-<input id="name2" placeholder="Nama 2 (opsional)">
+<!-- FORM -->
+<div id="form" class="sub">
+<input id="name1" placeholder="Nama">
+<input id="email" placeholder="Email">
 <button class="btn" onclick="order()">Lanjut</button>
 </div>
 
-<div class="sub" id="pay">
+<!-- PAYMENT -->
+<div id="pay" class="sub">
 <div class="card">
 <div id="orderId"></div>
 <div class="timer" id="timer">03:00</div>
@@ -54,7 +52,8 @@ body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-c
 </div>
 </div>
 
-<div class="sub" id="done">
+<!-- SUCCESS -->
+<div id="done" class="sub">
 <div class="card">
 <h3>Berhasil</h3>
 <div id="doneId"></div>
@@ -68,7 +67,7 @@ body{font-family:'DM Sans';background:#0a0a0f;color:white;display:flex;justify-c
 <script>
 
 // ================= CONFIG =================
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbylpVq5gSu2wwZb62ibiRnMV7C-4gYiLbgSQFsUyJ2R_iG2PecN4yD-Eq6MCfddUIZ_/exec";
+const SCRIPT_URL = "PASTE_URL_APPS_SCRIPT_KAMU";
 
 // ================= API =================
 async function api(action,data={}){
@@ -93,30 +92,25 @@ async function load(){
 
   res.events.forEach(e=>{
     const div=document.createElement("div");
-    div.className="event"+(e.isFull?" full":"");
+    div.className="event";
 
     div.innerHTML=`
       <b>${e.eventName}</b><br>
       ${e.eventDate}<br>
-      Rp ${e.ticketPrice.toLocaleString()}<br>
-      ${e.isFull?"Sold Out":"Open"}
+      Rp ${e.ticketPrice.toLocaleString()}
     `;
 
-    if(!e.isFull){
-      div.onclick=()=>openEvent(e);
-    }
-
+    div.onclick=()=>openEvent(e);
     el.appendChild(div);
   });
 }
-
 load();
 
 // ================= NAV =================
 function openEvent(e){
   currentEvent=e;
-  document.getElementById("list").style.display="none";
-  document.getElementById("detail").style.display="block";
+  list.style.display="none";
+  detail.style.display="block";
 
   name.innerText=e.eventName;
   date.innerText=e.eventDate;
@@ -124,21 +118,23 @@ function openEvent(e){
 }
 
 function back(){
-  document.getElementById("detail").style.display="none";
-  document.getElementById("list").style.display="block";
+  detail.style.display="none";
+  list.style.display="block";
 }
 
 // ================= ORDER =================
 async function order(){
-  const name1=document.getElementById("name1").value;
-  const name2=document.getElementById("name2").value;
+  const name1=document.getElementById("name1").value.trim();
+  const email=document.getElementById("email").value.trim();
 
   if(!name1) return alert("Nama wajib");
+  if(!email.includes("@")) return alert("Email tidak valid");
 
   const res = await api("createOrder",{
     eventKey:currentEvent.key,
     slots:1,
-    name1
+    name1,
+    email
   });
 
   if(!res.success) return alert(res.error);
@@ -162,7 +158,6 @@ async function confirmPay(){
   if(!res.success) return alert(res.error);
 
   clearInterval(timerInt);
-
   document.getElementById("doneId").innerText=orderId;
   show("done");
 }
@@ -170,8 +165,8 @@ async function confirmPay(){
 // ================= TIMER =================
 function startTimer(){
   clearInterval(timerInt);
-
   let t=180;
+
   timerInt=setInterval(()=>{
     t--;
     let m=String(Math.floor(t/60)).padStart(2,"0");
