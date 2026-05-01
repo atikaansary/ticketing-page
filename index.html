@@ -137,9 +137,8 @@ async function order(){
 
   const res = await api("createOrder",{
     eventKey:currentEvent.key,
-    slots:name2?2:1,
-    name1,
-    name2
+    slots:1,
+    name1
   });
 
   if(!res.success) return alert(res.error);
