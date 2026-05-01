@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tiket Event</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c26;
+  --border:rgba(255,255,255,0.08);
+  --accent:#e8ff6b;
+  --text:#f0f0f5; --text2:#8888aa;
+  --danger:#ff6b6b;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);margin:0;display:flex;justify-content:center}
+.wrap{max-width:520px;width:100%;padding:2rem 1rem}
+
+.logo{text-align:center;margin-bottom:2rem}
+.logo-title{font-family:'Syne';font-size:32px;font-weight:800}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem}
+
+.event-card{padding:1.2rem;border-radius:16px;border:1px solid var(--border);margin-bottom:10px;cursor:pointer}
+.event-card.full{opacity:.5;cursor:not-allowed}
+
+.event-name{font-weight:700;font-family:'Syne'}
+.event-date{font-size:13px;color:var(--text2)}
+.event-price{color:var(--accent);font-weight:700}
+
+.status{font-size:12px;margin-top:8px}
+.status.open{color:#6bffb8}
+.status.full{color:var(--danger)}
+
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-weight:700;font-family:'Syne';cursor:pointer}
+.btn-primary{background:var(--accent)}
+.btn-primary:disabled{background:#555}
+
+input{width:100%;padding:12px;margin-bottom:1rem;background:var(--surface2);border:1px solid var(--border);color:white;border-radius:10px}
+
+.sub{display:none}
+.sub.active{display:block}
+
+.timer{font-size:36px;text-align:center;color:var(--accent)}
+.center{text-align:center}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="logo">
+  <div class="logo-title">Pilih Event</div>
+</div>
+
+<!-- EVENT LIST -->
+<div id="screenList"></div>
+
+<!-- DETAIL -->
+<div id="screenDetail" style="display:none">
+
+  <button onclick="goBack()">← Kembali</button>
+
+  <div class="card">
+    <div id="eventName"></div>
+    <div id="eventDate"></div>
+    <div id="eventPrice"></div>
+  </div>
+
+  <button class="btn btn-primary" id="btnStart" onclick="start()">Pesan Tiket</button>
+
+  <!-- FORM -->
+  <div class="sub" id="form">
+    <div class="card">
+      <input id="name1" placeholder="Nama 1">
+      <input id="name2" placeholder="Nama 2 (opsional)">
+      <button class="btn btn-primary" onclick="createOrder()">Lanjut</button>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="sub" id="payment">
+    <div class="card center">
+      <div id="orderId"></div>
+      <div class="timer" id="timer">03:00</div>
+      <div id="va"></div>
+      <button class="btn btn-primary" onclick="success()">Saya Sudah Transfer</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="sub" id="success">
+    <div class="card center">
+      <h2>Berhasil!</h2>
+      <div id="successOrder"></div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+
+// ================= DEMO DATA =================
+const events = [
+  {key:"May",name:"Event May",date:"8 May 2026",price:35000,isFull:false,isActive:true},
+  {key:"juli",name:"Event Juli",date:"20 Juli 2025",price:35000,isFull:true,isActive:true},
+];
+
+// ================= INIT =================
+const listEl = document.getElementById("screenList");
+
+function loadList(){
+  listEl.innerHTML="";
+  events.forEach(e=>{
+    const el = document.createElement("div");
+    el.className="event-card"+(e.isFull?" full":"");
+
+    let status = e.isFull ? "Sold Out" : (e.isActive ? "Open Registration" : "Closed");
+
+    el.innerHTML=`
+      <div class="event-name">${e.name}</div>
+      <div class="event-date">${e.date}</div>
+      <div class="event-price">Rp ${e.price.toLocaleString()}</div>
+      <div class="status ${e.isFull?'full':'open'}">${status}</div>
+    `;
+
+    if(!e.isFull && e.isActive){
+      el.onclick=()=>openEvent(e);
+    }
+
+    listEl.appendChild(el);
+  });
+}
+
+loadList();
+
+// ================= STATE =================
+let currentEvent=null;
+let orderId=null;
+let timerInt=null;
+
+// ================= NAV =================
+function openEvent(e){
+  currentEvent=e;
+  document.getElementById("screenList").style.display="none";
+  document.getElementById("screenDetail").style.display="block";
+
+  document.getElementById("eventName").innerText=e.name;
+  document.getElementById("eventDate").innerText=e.date;
+  document.getElementById("eventPrice").innerText="Rp "+e.price.toLocaleString();
+}
+
+function goBack(){
+  document.getElementById("screenDetail").style.display="none";
+  document.getElementById("screenList").style.display="block";
+}
+
+// ================= FLOW =================
+function start(){
+  show("form");
+}
+
+function createOrder(){
+  orderId="TKT-"+Math.random().toString(36).slice(2,8).toUpperCase();
+
+  document.getElementById("orderId").innerText=orderId;
+  document.getElementById("va").innerText="VA: 827700123456";
+
+  show("payment");
+  startTimer();
+}
+
+function success(){
+  clearInterval(timerInt);
+  document.getElementById("successOrder").innerText=orderId;
+  show("success");
+}
+
+function show(id){
+  document.querySelectorAll(".sub").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+// ================= TIMER =================
+function startTimer(){
+  let time=180;
+  timerInt=setInterval(()=>{
+    time--;
+    let m=String(Math.floor(time/60)).padStart(2,"0");
+    let s=String(time%60).padStart(2,"0");
+    document.getElementById("timer").innerText=m+":"+s;
+
+    if(time<=0){
+      clearInterval(timerInt);
+      alert("Expired");
+      goBack();
+    }
+  },1000);
+}
+
+</script>
+</body>
+</html>
